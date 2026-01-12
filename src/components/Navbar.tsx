@@ -43,7 +43,8 @@ const Navbar = () => {
         }} className="text-2xl font-display font-bold gradient-text" whileHover={{
           scale: 1.05
         }}>
-            ​DRIP AND TRIP    
+            ​DRIP AND TRIP
+    
           </motion.a>
 
           {/* Desktop Navigation */}
