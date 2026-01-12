@@ -12,7 +12,7 @@ const HeroSection = () => {
   };
 
   return (
-    <section id="welcome" className="h-[70vh] gradient-hero flex items-end justify-center relative overflow-hidden pb-16">
+    <section id="welcome" className="h-[70vh] gradient-hero flex items-center justify-center relative overflow-hidden">
       {/* Decorative Elements */}
       <div className="absolute inset-0 overflow-hidden">
         <motion.div 
@@ -50,21 +50,21 @@ const HeroSection = () => {
         />
       </div>
 
-      {/* Logo */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.8 }}
-        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
-      >
-        <img 
-          src={logo} 
-          alt="Drip & Trip - The Puff Club" 
-          className="w-64 h-64 md:w-80 md:h-80 object-contain drop-shadow-2xl"
-        />
-      </motion.div>
+      <div className="container mx-auto px-4 text-center relative z-10 flex flex-col items-center">
+        {/* Logo */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.8 }}
+          className="mb-6"
+        >
+          <img 
+            src={logo} 
+            alt="Drip & Trip - The Puff Club" 
+            className="w-48 h-48 md:w-64 md:h-64 object-contain drop-shadow-2xl"
+          />
+        </motion.div>
 
-      <div className="container mx-auto px-4 text-center relative z-10">
         <motion.h1 
           initial={{ opacity: 0, y: 30 }} 
           animate={{ opacity: 1, y: 0 }} 
