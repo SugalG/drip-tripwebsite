@@ -2,69 +2,95 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import ProductCard from "./ProductCard";
 
-const categories = ["All", "Disposables", "Mods", "E-Liquids", "Accessories"];
+import vape1 from "@/assets/vape-1.png";
+import vape2 from "@/assets/vape-2.png";
+import vape3 from "@/assets/vape-3.png";
+import vapeMod1 from "@/assets/vape-mod-1.png";
+import vapeMod2 from "@/assets/vape-mod-2.png";
+import eliquid1 from "@/assets/eliquid-1.png";
+import eliquid2 from "@/assets/eliquid-2.png";
+import accessory1 from "@/assets/accessory-1.png";
+import accessory2 from "@/assets/accessory-2.png";
+
+const categories = ["Disposables", "Mods", "E-Liquids", "Accessories", "All"];
 
 const products = [
   {
     id: 1,
     name: "Cloud Master Pro",
-    price: 49.99,
+    price: 4999,
     category: "Disposables",
     description: "Premium disposable vape with 5000 puffs and rich flavor.",
+    image: vape1,
   },
   {
     id: 2,
     name: "Vapor King X2",
-    price: 79.99,
+    price: 7999,
     category: "Mods",
     description: "Advanced mod with temperature control and long battery life.",
+    image: vapeMod1,
   },
   {
     id: 3,
     name: "Blue Razz Ice",
-    price: 24.99,
+    price: 2499,
     category: "E-Liquids",
     description: "Refreshing blue raspberry flavor with cooling menthol finish.",
+    image: eliquid1,
   },
   {
     id: 4,
     name: "Mega Puff 8000",
-    price: 34.99,
+    price: 3499,
     category: "Disposables",
     description: "Extended puff count disposable with adjustable airflow.",
+    image: vape2,
   },
   {
     id: 5,
     name: "Pod System Elite",
-    price: 59.99,
+    price: 5999,
     category: "Mods",
     description: "Compact pod system perfect for MTL and DTL vaping.",
+    image: vapeMod2,
   },
   {
     id: 6,
     name: "Tropical Mango",
-    price: 22.99,
+    price: 2299,
     category: "E-Liquids",
     description: "Sweet and juicy mango flavor for all-day vaping.",
+    image: eliquid2,
   },
   {
     id: 7,
     name: "Replacement Coils 5pk",
-    price: 19.99,
+    price: 1999,
     category: "Accessories",
     description: "Premium mesh coils for enhanced flavor and vapor.",
+    image: accessory1,
   },
   {
     id: 8,
     name: "Carrying Case",
-    price: 14.99,
+    price: 1499,
     category: "Accessories",
     description: "Protective case with compartments for vape and accessories.",
+    image: accessory2,
+  },
+  {
+    id: 9,
+    name: "Crystal Clear 6000",
+    price: 3999,
+    category: "Disposables",
+    description: "Crystal-clear body with LED indicator and smooth draw.",
+    image: vape3,
   },
 ];
 
 const ShopSection = () => {
-  const [activeCategory, setActiveCategory] = useState("All");
+  const [activeCategory, setActiveCategory] = useState("Disposables");
 
   const filteredProducts =
     activeCategory === "All"
