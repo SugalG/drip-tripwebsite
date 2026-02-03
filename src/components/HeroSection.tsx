@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import logo from "@/assets/logo.png";
+import heroBg from "@/assets/hero-bg.png";
 
 const HeroSection = () => {
   const scrollToShop = () => {
@@ -12,43 +13,15 @@ const HeroSection = () => {
   };
 
   return (
-    <section id="welcome" className="h-[70vh] gradient-hero flex items-center justify-center relative overflow-hidden">
-      {/* Decorative Elements */}
-      <div className="absolute inset-0 overflow-hidden">
-        <motion.div 
-          className="absolute top-20 left-10 w-32 h-32 rounded-full bg-vape-blue/30 blur-3xl" 
-          animate={{
-            scale: [1, 1.2, 1],
-            opacity: [0.5, 0.8, 0.5]
-          }} 
-          transition={{
-            duration: 4,
-            repeat: Infinity
-          }} 
-        />
-        <motion.div 
-          className="absolute bottom-20 right-10 w-48 h-48 rounded-full bg-vape-pink/40 blur-3xl" 
-          animate={{
-            scale: [1.2, 1, 1.2],
-            opacity: [0.6, 0.9, 0.6]
-          }} 
-          transition={{
-            duration: 5,
-            repeat: Infinity
-          }} 
-        />
-        <motion.div 
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full bg-primary/10 blur-3xl" 
-          animate={{
-            rotate: 360
-          }} 
-          transition={{
-            duration: 20,
-            repeat: Infinity,
-            ease: "linear"
-          }} 
-        />
-      </div>
+    <section id="welcome" className="h-[70vh] flex items-center justify-center relative overflow-hidden">
+      {/* Background Image */}
+      <div 
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: `url(${heroBg})` }}
+      />
+      
+      {/* Dark Overlay with Blur */}
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
 
       <div className="container mx-auto px-4 text-center relative z-10 flex flex-col items-center">
         {/* Logo */}
