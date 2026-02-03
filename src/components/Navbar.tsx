@@ -40,11 +40,10 @@ const Navbar = () => {
           <motion.a href="#welcome" onClick={e => {
           e.preventDefault();
           scrollToSection("#welcome");
-        }} className="text-2xl font-display font-bold gradient-text" whileHover={{
+        }} className="hidden md:block text-2xl font-display font-bold gradient-text" whileHover={{
           scale: 1.05
         }}>
             ​DRIP AND TRIP
-    
           </motion.a>
 
           {/* Desktop Navigation */}
