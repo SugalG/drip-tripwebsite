@@ -70,7 +70,7 @@ const HeroSection = () => {
           document.querySelector("#about")?.scrollIntoView({
             behavior: "smooth"
           });
-        }} className="px-8 py-4 rounded-full backdrop-blur-sm font-semibold shadow-soft border border-border text-muted bg-primary" whileHover={{
+        }} className="px-8 py-4 rounded-full backdrop-blur-sm font-semibold shadow-soft border border-border bg-primary text-primary-foreground" whileHover={{
           scale: 1.05
         }} whileTap={{
           scale: 0.95
