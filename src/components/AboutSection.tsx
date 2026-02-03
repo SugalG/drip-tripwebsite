@@ -18,7 +18,7 @@ const features = [{
   description: "Quick response times and efficient order processing."
 }];
 const AboutSection = () => {
-  return <section id="about" className="py-24 bg-muted/30">
+  return <section id="about" className="py-24 bg-primary-foreground">
       <div className="container mx-auto px-4">
         <motion.div initial={{
         opacity: 0,

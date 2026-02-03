@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 const Footer = () => {
-  return <footer className="py-12 gradient-hero">
+  return <footer className="py-12 gradient-hero text-primary-foreground bg-primary-foreground">
       <div className="container mx-auto px-4">
         <div className="flex flex-col md:flex-row items-center justify-between gap-6">
           <motion.div initial={{

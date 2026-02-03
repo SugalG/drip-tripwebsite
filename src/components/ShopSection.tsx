@@ -78,7 +78,7 @@ const products = [{
 const ShopSection = () => {
   const [activeCategory, setActiveCategory] = useState("Disposables");
   const filteredProducts = activeCategory === "All" ? products : products.filter(p => p.category === activeCategory);
-  return <section id="shop" className="py-24">
+  return <section id="shop" className="py-24 bg-primary-foreground">
       <div className="container mx-auto px-4">
         <motion.div initial={{
         opacity: 0,
