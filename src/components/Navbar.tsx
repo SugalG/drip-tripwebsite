@@ -9,7 +9,7 @@ const navItems = [{
   href: "#about"
 }, {
   label: "Shop Visit",
-  href: "#shop"
+  href: "#contact"
 }];
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
