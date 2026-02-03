@@ -52,7 +52,7 @@ const Navbar = () => {
             {navItems.map(item => <motion.a key={item.label} href={item.href} onClick={e => {
             e.preventDefault();
             scrollToSection(item.href);
-          }} className="relative text-foreground/80 hover:text-foreground font-medium transition-colors" whileHover={{
+          }} className="relative font-medium transition-colors text-primary" whileHover={{
             scale: 1.05
           }}>
                 {item.label}

@@ -17,7 +17,7 @@ const ContactSection = () => {
         duration: 0.6
       }} className="text-center mb-12">
           <h2 className="text-4xl md:text-5xl font-display font-bold mb-4">
-            Visit Our <span className="gradient-text">Store</span>
+            ​ <span className="gradient-text">Visit Our Store</span>
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             Come visit us or reach out through any of our channels. We're always
