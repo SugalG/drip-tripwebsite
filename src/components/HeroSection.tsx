@@ -17,7 +17,7 @@ const HeroSection = () => {
     }} />
       
       {/* Dark Overlay with Blur */}
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm text-destructive shadow-none" />
 
       <div className="container mx-auto px-4 text-center relative z-10 flex flex-col items-center">
         {/* Logo */}

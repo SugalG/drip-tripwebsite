@@ -35,7 +35,7 @@ const Navbar = () => {
   }} animate={{
     y: 0
   }} className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? "bg-card/95 backdrop-blur-md shadow-card" : "bg-transparent"}`}>
-      <div className="container mx-auto px-4 py-4">
+      <div className="container mx-auto px-4 py-4 border-0 border-primary-foreground">
         <div className="flex items-center justify-between">
           <motion.a href="#welcome" onClick={e => {
           e.preventDefault();
@@ -52,7 +52,7 @@ const Navbar = () => {
             {navItems.map(item => <motion.a key={item.label} href={item.href} onClick={e => {
             e.preventDefault();
             scrollToSection(item.href);
-          }} className="relative font-medium transition-colors text-primary" whileHover={{
+          }} className="relative font-medium transition-colors text-vape-blue shadow-md" whileHover={{
             scale: 1.05
           }}>
                 {item.label}
