@@ -1,0 +1,35 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Product {
+  id          String    @id @default(uuid())
+  name        String
+  price       Int
+  category    String
+  description String
+  imageUrl    String[]
+
+  flavors     Flavor[]  // One-to-many relation
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([category])
+}
+
+model Flavor {
+  id        String   @id @default(uuid())
+  name      String
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  // Prevent duplicate flavor names for same product
+  @@unique([name, productId])
+}
