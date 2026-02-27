@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { Phone, Mail, MapPin, MessageCircle, Clock } from "lucide-react";
 const ContactSection = () => {
-  const whatsappNumber = "+1234567890";
+  const whatsappNumber = "9779828037569";
   const whatsappLink = `https://wa.me/${whatsappNumber.replace(/[^0-9]/g, "")}`;
   return <section id="contact" className="py-24 bg-primary-foreground">
       <div className="container mx-auto px-4">

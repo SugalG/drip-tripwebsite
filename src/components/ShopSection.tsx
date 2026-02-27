@@ -4,13 +4,20 @@ import ProductCard from "./ProductCard";
 
 const categories = ["Disposables", "Mods", "E-Liquids", "Accessories", "All"];
 
+interface Flavor {
+  id: string;
+  name: string;
+}
+
 interface Product {
   id: string;
   name: string;
   price: number;
   category: string;
   description: string;
-  imageUrl: string; 
+  imageUrl: string[];
+  coverIndex: number;
+  flavors: Flavor[];
 }
 
 const ShopSection = () => {
@@ -20,12 +27,12 @@ const ShopSection = () => {
 
   useEffect(() => {
     fetch("http://localhost:4000/api/products")
-      .then(res => res.json())
-      .then(data => {
+      .then((res) => res.json())
+      .then((data) => {
         setProducts(data);
         setLoading(false);
       })
-      .catch(err => {
+      .catch((err) => {
         console.error("Failed to fetch products", err);
         setLoading(false);
       });
@@ -34,7 +41,7 @@ const ShopSection = () => {
   const filteredProducts =
     activeCategory === "All"
       ? products
-      : products.filter(p => p.category === activeCategory);
+      : products.filter((p) => p.category === activeCategory);
 
   return (
     <section id="shop" className="py-24 bg-primary-foreground">
@@ -54,7 +61,6 @@ const ShopSection = () => {
           </p>
         </motion.div>
 
-        {/* Category Filters */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -62,7 +68,7 @@ const ShopSection = () => {
           transition={{ duration: 0.6, delay: 0.2 }}
           className="flex flex-wrap justify-center gap-3 mb-12"
         >
-          {categories.map(category => (
+          {categories.map((category) => (
             <motion.button
               key={category}
               onClick={() => setActiveCategory(category)}
@@ -79,19 +85,21 @@ const ShopSection = () => {
           ))}
         </motion.div>
 
-        {/* Products Grid */}
         {loading ? (
           <p className="text-center text-lg">Loading products...</p>
         ) : (
           <motion.div layout className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredProducts.map(product => (
+            {filteredProducts.map((product) => (
               <ProductCard
                 key={product.id}
+                id={product.id}
                 name={product.name}
                 price={product.price}
                 category={product.category}
                 description={product.description}
-                image={product.imageUrl} // backend returns imageUrl
+                images={product.imageUrl}
+                coverIndex={product.coverIndex}
+                flavors={product.flavors?.map((f) => f.name) || []}
               />
             ))}
           </motion.div>
