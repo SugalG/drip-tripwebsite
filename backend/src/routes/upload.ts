@@ -1,15 +1,14 @@
 import express, { Request, Response } from "express";
 import multer from "multer";
 import cloudinary from "../config/cloudinary";
+import requireAdmin from "../middleware/requireAdmin";
 
 const router = express.Router();
-
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
-router.post("/", upload.array("images", 3), async (req: Request, res: Response) => {
+router.post("/", requireAdmin, upload.array("images", 3), async (req: Request, res: Response) => {
   try {
-    // ✅ Narrow req.files safely (Express type allows multiple shapes)
     const files = Array.isArray(req.files) ? req.files : [];
 
     if (!files.length) {

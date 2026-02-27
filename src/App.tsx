@@ -7,7 +7,8 @@ import Index from "./pages/Index";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 import LoginPage from "./pages/Login";
-import ProductDetails from "./pages/ProductDetails"; 
+import ProductDetails from "./pages/ProductDetails";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -19,7 +20,14 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
-          <Route path="/admin" element={<Admin />} />
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute>
+                <Admin />
+              </ProtectedRoute>
+            }
+          />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/product/:id" element={<ProductDetails />} />
 

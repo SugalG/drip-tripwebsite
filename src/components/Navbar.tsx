@@ -61,13 +61,7 @@ const Navbar = () => {
               duration: 0.2
             }} />
               </motion.a>)}
-            <motion.a href="/admin" className="px-4 py-2 rounded-full gradient-button text-primary-foreground font-medium shadow-button" whileHover={{
-            scale: 1.05
-          }} whileTap={{
-            scale: 0.95
-          }}>
-              Admin
-            </motion.a>
+       
           </div>
 
           {/* Mobile Menu Button */}
@@ -91,9 +85,7 @@ const Navbar = () => {
           }} className="text-foreground/80 hover:text-foreground font-medium transition-colors">
                   {item.label}
                 </a>)}
-              <a href="/admin" className="px-4 py-2 rounded-full gradient-button text-primary-foreground font-medium text-center shadow-button">
-                Admin
-              </a>
+             
             </div>
           </motion.div>}
       </div>

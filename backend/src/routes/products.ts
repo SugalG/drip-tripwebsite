@@ -1,10 +1,23 @@
 import { Router } from "express";
 import prisma from "../lib/prisma";
+import requireAdmin from "../middleware/requireAdmin";
 
 const router = Router();
 
 /**
- * GET all products (include flavors)
+ * Express v5 typings can widen params to string | string[].
+ * Prisma expects a string UUID.
+ */
+const getIdParam = (req: any): string | null => {
+  const raw = req.params?.id;
+
+  if (typeof raw === "string") return raw;
+  if (Array.isArray(raw) && typeof raw[0] === "string") return raw[0];
+  return null;
+};
+
+/**
+ * GET all products (include flavors) - PUBLIC
  */
 router.get("/", async (_req, res) => {
   try {
@@ -26,11 +39,12 @@ router.get("/", async (_req, res) => {
 });
 
 /**
- * GET product by id (include flavors)
+ * GET product by id (include flavors) - PUBLIC
  */
 router.get("/:id", async (req, res) => {
   try {
-    const { id } = req.params;
+    const id = getIdParam(req);
+    if (!id) return res.status(400).json({ error: "Invalid product id" });
 
     const product = await prisma.product.findUnique({
       where: { id },
@@ -52,9 +66,19 @@ router.get("/:id", async (req, res) => {
 });
 
 /**
- * CREATE product
+ * CREATE product - PROTECTED ✅
+ * body example:
+ * {
+ *   "name": "Vape X",
+ *   "price": 1200,
+ *   "category": "E-Liquids",
+ *   "description": "...",
+ *   "imageUrl": ["url1","url2","url3"],
+ *   "coverIndex": 0,
+ *   "flavors": ["Mint","Grape"]
+ * }
  */
-router.post("/", async (req, res) => {
+router.post("/", requireAdmin, async (req, res) => {
   try {
     const { name, price, category, description, imageUrl, flavors, coverIndex } = req.body;
 
@@ -68,11 +92,11 @@ router.post("/", async (req, res) => {
     // flavors should be string[]
     const flavorArray: string[] = Array.isArray(flavors) ? flavors : [];
 
-    // ✅ coverIndex validation
+    // coverIndex validation
     let cover = Number(coverIndex);
     if (!Number.isFinite(cover)) cover = 0;
     if (cover < 0) cover = 0;
-    if (cover > imageArray.length - 1) cover = 0; // reset if invalid
+    if (cover > imageArray.length - 1) cover = 0;
 
     const product = await prisma.product.create({
       data: {
@@ -81,7 +105,7 @@ router.post("/", async (req, res) => {
         category,
         description,
         imageUrl: imageArray,
-        coverIndex: cover, // ✅ added
+        coverIndex: cover,
         flavors: {
           create: flavorArray.map((f) => ({ name: f })),
         },
@@ -104,11 +128,14 @@ router.post("/", async (req, res) => {
 });
 
 /**
- * UPDATE product (replace all flavors)
+ * UPDATE product - PROTECTED ✅
+ * (replace all flavors)
  */
-router.put("/:id", async (req, res) => {
+router.put("/:id", requireAdmin, async (req, res) => {
   try {
-    const { id } = req.params;
+    const id = getIdParam(req);
+    if (!id) return res.status(400).json({ error: "Invalid product id" });
+
     const { name, price, category, description, imageUrl, flavors, coverIndex } = req.body;
 
     const imageArray: string[] = Array.isArray(imageUrl)
@@ -119,7 +146,7 @@ router.put("/:id", async (req, res) => {
 
     const flavorArray: string[] = Array.isArray(flavors) ? flavors : [];
 
-    // ✅ coverIndex validation
+    // coverIndex validation
     let cover = Number(coverIndex);
     if (!Number.isFinite(cover)) cover = 0;
     if (cover < 0) cover = 0;
@@ -133,9 +160,9 @@ router.put("/:id", async (req, res) => {
         category,
         description,
         imageUrl: imageArray,
-        coverIndex: cover, // ✅ added
+        coverIndex: cover,
         flavors: {
-          deleteMany: {},
+          deleteMany: {}, // delete all existing flavors for this product
           create: flavorArray.map((f) => ({ name: f })),
         },
       },
@@ -157,11 +184,12 @@ router.put("/:id", async (req, res) => {
 });
 
 /**
- * DELETE product
+ * DELETE product - PROTECTED ✅
  */
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", requireAdmin, async (req, res) => {
   try {
-    const { id } = req.params;
+    const id = getIdParam(req);
+    if (!id) return res.status(400).json({ error: "Invalid product id" });
 
     await prisma.product.delete({ where: { id } });
 

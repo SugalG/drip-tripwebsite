@@ -21,10 +21,10 @@ router.post("/", async (req, res) => {
 
       // Set cookie
       res.cookie("access_token", token, {
-        httpOnly: true,        // JS cannot access
-        secure: process.env.NODE_ENV === "production", // HTTPS only in prod
-        sameSite: "strict",
-        maxAge: 60 * 60 * 1000 // 1 hour
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+        maxAge: 60 * 60 * 1000,
       });
 
       return res.json({ message: "Login successful" });
