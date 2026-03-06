@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+const API_URL = import.meta.env.VITE_API_URL;
 
 type Props = {
   children: React.ReactNode;
@@ -13,7 +13,7 @@ export default function ProtectedRoute({ children }: Props) {
   const location = useLocation();
 
   useEffect(() => {
-    fetch(`${BACKEND_URL}/api/auth/me`, {
+    fetch(`${API_URL}/api/auth/me`, {
       credentials: "include",
     })
       .then((res) => res.json())
@@ -32,7 +32,6 @@ export default function ProtectedRoute({ children }: Props) {
   }
 
   if (!ok) {
-    // keep where user came from, useful for redirect after login
     return <Navigate to="/login" replace state={{ from: location.pathname }} />;
   }
 

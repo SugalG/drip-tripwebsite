@@ -6,12 +6,11 @@ import loginRoutes from "./routes/login";
 import cookieParser from "cookie-parser";
 import authRoutes from "./routes/auth";
 
-
 const app = express();
 
 app.use(
   cors({
-    origin: "http://localhost:8080",
+    origin: true,
     credentials: true,
   })
 );
@@ -25,9 +24,8 @@ app.get("/health", (_req, res) => {
 
 app.use("/api/products", productRoutes);
 app.use("/api/upload", uploadRoutes);
-app.use("/api/login",loginRoutes);
+app.use("/api/login", loginRoutes);
 app.use("/api/auth", authRoutes);
-
 
 const PORT = 4000;
 app.listen(PORT, () => {

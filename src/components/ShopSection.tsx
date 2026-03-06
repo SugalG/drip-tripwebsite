@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import ProductCard from "./ProductCard";
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 const categories = ["Disposables", "Mods", "E-Liquids", "Accessories", "All"];
 
 interface Flavor {
@@ -26,7 +28,7 @@ const ShopSection = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("http://localhost:4000/api/products")
+    fetch(`${API_URL}/api/products`)
       .then((res) => res.json())
       .then((data) => {
         setProducts(data);

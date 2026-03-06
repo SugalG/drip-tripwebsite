@@ -19,6 +19,8 @@ interface Product {
   flavors: Flavor[];
 }
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 const formatNPR = (price: number) => `NPR ${price.toLocaleString("en-NP")}`;
 
 export default function ProductDetails() {
@@ -31,7 +33,7 @@ export default function ProductDetails() {
     if (!id) return;
 
     setLoading(true);
-    fetch(`http://localhost:4000/api/products/${id}`)
+    fetch(`${API_URL}/api/products/${id}`)
       .then(async (res) => {
         const data = await res.json();
         if (!res.ok) throw new Error(data?.error || "Failed to fetch product");
@@ -39,7 +41,8 @@ export default function ProductDetails() {
       })
       .then((data: Product) => {
         setProduct(data);
-        const cover = data.imageUrl?.[data.coverIndex ?? 0] || data.imageUrl?.[0] || "";
+        const cover =
+          data.imageUrl?.[data.coverIndex ?? 0] || data.imageUrl?.[0] || "";
         setActiveImg(cover);
         setLoading(false);
       })
@@ -91,7 +94,6 @@ export default function ProductDetails() {
         </Link>
 
         <div className="grid lg:grid-cols-2 gap-8">
-          {/* Left: gallery */}
           <motion.div
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
@@ -115,19 +117,23 @@ export default function ProductDetails() {
                   <button
                     key={`${img}-${idx}`}
                     onClick={() => setActiveImg(img)}
-                    className={`h-20 w-20 rounded-2xl border overflow-hidden transition ${activeImg === img ? "border-primary" : "border-border"
-                      }`}
+                    className={`h-20 w-20 rounded-2xl border overflow-hidden transition ${
+                      activeImg === img ? "border-primary" : "border-border"
+                    }`}
                     title="View image"
                     type="button"
                   >
-                    <img src={img} alt="thumb" className="h-full w-full object-contain p-2" />
+                    <img
+                      src={img}
+                      alt="thumb"
+                      className="h-full w-full object-contain p-2"
+                    />
                   </button>
                 ))}
               </div>
             )}
           </motion.div>
 
-          {/* Right: details */}
           <motion.div
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
@@ -166,7 +172,6 @@ export default function ProductDetails() {
               </>
             )}
 
-            {/* WhatsApp Contact */}
             <div className="mt-8">
               <a
                 href={`https://wa.me/9779828037569?text=${encodeURIComponent(
