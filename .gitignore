@@ -17,6 +17,7 @@ yarn-error.log*
 # Env files (never commit)
 .env
 .env.*
+backend/dist
 backend/.env
 backend/.env.*
 
