@@ -27,7 +27,7 @@ app.use("/api/upload", uploadRoutes);
 app.use("/api/login", loginRoutes);
 app.use("/api/auth", authRoutes);
 
-const PORT = 4000;
+const PORT = 7010;
 app.listen(PORT, () => {
   console.log(`Backend running on http://localhost:${PORT}`);
 });
