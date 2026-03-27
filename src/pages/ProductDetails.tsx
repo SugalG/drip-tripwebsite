@@ -174,7 +174,7 @@ export default function ProductDetails() {
 
             <div className="mt-8">
               <a
-                href={`https://wa.me/9779828037569?text=${encodeURIComponent(
+                href={`https://wa.me/9779828037561?text=${encodeURIComponent(
                   `Hi, I'm interested in "${product.name}". Can you provide more details?`
                 )}`}
                 target="_blank"

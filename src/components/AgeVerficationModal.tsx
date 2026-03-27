@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ShieldAlert } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -9,16 +9,37 @@ interface AgeVerificationModalProps {
   onVerified: () => void;
 }
 
+const AGE_VERIFIED_KEY = "age_verified";
+const AGE_DENIED_KEY = "age_denied";
+
 const AgeVerificationModal = ({ onVerified }: AgeVerificationModalProps) => {
   const [disclaimerChecked, setDisclaimerChecked] = useState(false);
   const [denied, setDenied] = useState(false);
 
+  useEffect(() => {
+    const isVerified = localStorage.getItem(AGE_VERIFIED_KEY) === "true";
+    const isDenied = localStorage.getItem(AGE_DENIED_KEY) === "true";
+
+    if (isVerified) {
+      onVerified();
+      return;
+    }
+
+    if (isDenied) {
+      setDenied(true);
+    }
+  }, [onVerified]);
+
   const handleOver18 = () => {
     if (!disclaimerChecked) return;
+
+    localStorage.setItem(AGE_VERIFIED_KEY, "true");
+    localStorage.removeItem(AGE_DENIED_KEY);
     onVerified();
   };
 
   const handleUnder18 = () => {
+    localStorage.setItem(AGE_DENIED_KEY, "true");
     setDenied(true);
   };
 
