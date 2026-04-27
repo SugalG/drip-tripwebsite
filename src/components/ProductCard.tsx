@@ -9,10 +9,10 @@ interface ProductCardProps {
   description: string;
   images?: string[];
   coverIndex?: number;
-  flavors?: string[];
 }
 
 const formatNPR = (price: number) => `NPR ${price.toLocaleString("en-NP")}`;
+const formatCategory = (category: string) => (category === "Mods" ? "Devices" : category);
 
 const ProductCard = ({
   id,
@@ -22,7 +22,6 @@ const ProductCard = ({
   description,
   images = [],
   coverIndex = 0,
-  flavors = [],
 }: ProductCardProps) => {
   const navigate = useNavigate();
   const coverImage = images?.[coverIndex] || images?.[0];
@@ -53,7 +52,7 @@ const ProductCard = ({
       </div>
 
       <span className="inline-block px-3 py-1 text-xs font-medium rounded-full bg-primary/10 text-primary mb-3">
-        {category}
+        {formatCategory(category)}
       </span>
 
       <h3 className="text-lg font-semibold mb-2 group-hover:gradient-text transition-all">
@@ -63,24 +62,6 @@ const ProductCard = ({
       <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
         {description}
       </p>
-
-      {flavors.length > 0 && (
-        <div className="flex flex-wrap gap-2 mb-4">
-          {flavors.slice(0, 3).map((f) => (
-            <span
-              key={f}
-              className="text-xs px-2 py-1 rounded-full bg-card border border-border text-foreground/80"
-            >
-              {f}
-            </span>
-          ))}
-          {flavors.length > 3 && (
-            <span className="text-xs px-2 py-1 rounded-full bg-card border border-border text-foreground/80">
-              +{flavors.length - 3}
-            </span>
-          )}
-        </div>
-      )}
 
       <div className="flex items-center justify-between">
         <span className="text-xl font-bold gradient-text">{formatNPR(price)}</span>

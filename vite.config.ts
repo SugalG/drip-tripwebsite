@@ -8,6 +8,16 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
+    proxy: {
+      "/api": {
+        target: "http://127.0.0.1:7010",
+        changeOrigin: false,
+      },
+      "/uploads": {
+        target: "http://127.0.0.1:7010",
+        changeOrigin: false,
+      },
+    },
 
     // ✅ allow Cloudflare tunnel hosts
     allowedHosts: true,
@@ -15,6 +25,9 @@ export default defineConfig(({ mode }) => ({
     hmr: {
       overlay: false,
     },
+  },
+  build: {
+    chunkSizeWarningLimit: 700,
   },
 
   plugins: [

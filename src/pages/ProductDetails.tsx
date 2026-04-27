@@ -2,8 +2,20 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft } from "lucide-react";
+import { api } from "@/lib/api";
+import { useBranch } from "@/contexts/BranchContext";
 
 interface Flavor {
+  id: string;
+  name: string;
+}
+
+interface Ohm {
+  id: string;
+  value: string;
+}
+
+interface Color {
   id: string;
   name: string;
 }
@@ -16,15 +28,17 @@ interface Product {
   description: string;
   imageUrl: string[];
   coverIndex: number;
+  ohms: Ohm[];
   flavors: Flavor[];
+  colors: Color[];
 }
 
-const API_URL = import.meta.env.VITE_API_URL;
-
 const formatNPR = (price: number) => `NPR ${price.toLocaleString("en-NP")}`;
+const formatCategory = (category: string) => (category === "Mods" ? "Devices" : category);
 
 export default function ProductDetails() {
   const { id } = useParams();
+  const { branch } = useBranch();
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeImg, setActiveImg] = useState<string>("");
@@ -33,16 +47,11 @@ export default function ProductDetails() {
     if (!id) return;
 
     setLoading(true);
-    fetch(`${API_URL}/api/products/${id}`)
-      .then(async (res) => {
-        const data = await res.json();
-        if (!res.ok) throw new Error(data?.error || "Failed to fetch product");
-        return data;
-      })
+    api
+      .getProduct(id)
       .then((data: Product) => {
         setProduct(data);
-        const cover =
-          data.imageUrl?.[data.coverIndex ?? 0] || data.imageUrl?.[0] || "";
+        const cover = data.imageUrl?.[data.coverIndex ?? 0] || data.imageUrl?.[0] || "";
         setActiveImg(cover);
         setLoading(false);
       })
@@ -54,6 +63,7 @@ export default function ProductDetails() {
   }, [id]);
 
   const images = useMemo(() => product?.imageUrl || [], [product]);
+  const whatsappNumber = branch?.whatsappNumber || branch?.phone || "9779828037561";
 
   if (loading) {
     return (
@@ -141,7 +151,7 @@ export default function ProductDetails() {
             className="p-6 rounded-3xl gradient-card shadow-card border border-border/50"
           >
             <span className="inline-block px-3 py-1 text-xs font-medium rounded-full bg-primary/10 text-primary mb-3">
-              {product.category}
+              {formatCategory(product.category)}
             </span>
 
             <h1 className="text-3xl md:text-4xl font-display font-bold mb-3">
@@ -156,25 +166,63 @@ export default function ProductDetails() {
               {product.description}
             </p>
 
-            {product.flavors?.length > 0 && (
-              <>
-                <div className="font-semibold mb-2">Available Flavors</div>
-                <div className="flex flex-wrap gap-2 mb-8">
-                  {product.flavors.map((f) => (
-                    <span
-                      key={f.id}
-                      className="text-xs px-3 py-1 rounded-full bg-primary/10 text-primary border border-primary/20"
-                    >
-                      {f.name}
-                    </span>
-                  ))}
-                </div>
-              </>
+            {(product.ohms?.length > 0 ||
+              product.flavors?.length > 0 ||
+              product.colors?.length > 0) && (
+              <div className="space-y-5 mb-8">
+                {product.ohms?.length > 0 && (
+                  <div>
+                    <div className="font-semibold mb-2">Available Ohms</div>
+                    <div className="flex flex-wrap gap-2">
+                      {product.ohms.map((ohm) => (
+                        <span
+                          key={ohm.id}
+                          className="text-xs px-3 py-1 rounded-full bg-primary/10 text-primary border border-primary/20"
+                        >
+                          {ohm.value}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {product.flavors?.length > 0 && (
+                  <div>
+                    <div className="font-semibold mb-2">Available Flavours</div>
+                    <div className="flex flex-wrap gap-2">
+                      {product.flavors.map((f) => (
+                        <span
+                          key={f.id}
+                          className="text-xs px-3 py-1 rounded-full bg-primary/10 text-primary border border-primary/20"
+                        >
+                          {f.name}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {product.colors?.length > 0 && (
+                  <div>
+                    <div className="font-semibold mb-2">Available Colours</div>
+                    <div className="flex flex-wrap gap-2">
+                      {product.colors.map((color) => (
+                        <span
+                          key={color.id}
+                          className="text-xs px-3 py-1 rounded-full bg-primary/10 text-primary border border-primary/20"
+                        >
+                          {color.name}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
 
             <div className="mt-8">
               <a
-                href={`https://wa.me/9779828037561?text=${encodeURIComponent(
+                href={`https://wa.me/${whatsappNumber.replace(/[^0-9]/g, "")}?text=${encodeURIComponent(
                   `Hi, I'm interested in "${product.name}". Can you provide more details?`
                 )}`}
                 target="_blank"

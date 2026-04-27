@@ -3,6 +3,16 @@ export interface FlavorObj {
   name: string;
 }
 
+export interface OhmObj {
+  id: string;
+  value: string;
+}
+
+export interface ColorObj {
+  id: string;
+  name: string;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -12,4 +22,6 @@ export interface Product {
   imageUrl: string[];
   coverIndex: number;
   flavors: FlavorObj[];
+  ohms: OhmObj[];
+  colors: ColorObj[];
 }

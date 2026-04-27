@@ -4,6 +4,18 @@ import { Product } from "@/types/product";
 
 const MAX_IMAGES = 3;
 
+const normalizeCategory = (value: string) => (value === "Mods" ? "Devices" : value);
+
+const normalizeOhm = (value: string) => {
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+
+  const baseValue = trimmed.replace(/ω/gi, "").replace(/ohm/gi, "").trim();
+  const withoutTrailingDot = baseValue.endsWith(".") ? baseValue.slice(0, -1) : baseValue;
+
+  return withoutTrailingDot ? `${withoutTrailingDot}Ω` : "";
+};
+
 const clampCoverIndex = (len: number, desired: number) => {
   if (len <= 0) return 0;
   if (desired < 0) return 0;
@@ -29,6 +41,10 @@ export const useProductForm = (onSaved: () => void) => {
   // flavors
   const [flavorInput, setFlavorInput] = useState("");
   const [flavors, setFlavors] = useState<string[]>([]);
+  const [ohmInput, setOhmInput] = useState("");
+  const [ohms, setOhms] = useState<string[]>([]);
+  const [colorInput, setColorInput] = useState("");
+  const [colors, setColors] = useState<string[]>([]);
 
   const [message, setMessage] = useState("");
   const [uploading, setUploading] = useState(false);
@@ -63,6 +79,10 @@ export const useProductForm = (onSaved: () => void) => {
 
     setFlavors([]);
     setFlavorInput("");
+    setOhms([]);
+    setOhmInput("");
+    setColors([]);
+    setColorInput("");
     setMessage("");
   };
 
@@ -169,11 +189,47 @@ export const useProductForm = (onSaved: () => void) => {
     setFlavors((prev) => prev.filter((x) => x !== f));
   };
 
+  const addOhm = () => {
+    const value = normalizeOhm(ohmInput);
+    if (!value) return;
+
+    const exists = ohms.some((x) => x.toLowerCase() === value.toLowerCase());
+    if (exists) {
+      setOhmInput("");
+      return;
+    }
+
+    setOhms((prev) => [...prev, value]);
+    setOhmInput("");
+  };
+
+  const removeOhm = (value: string) => {
+    setOhms((prev) => prev.filter((x) => x !== value));
+  };
+
+  const addColor = () => {
+    const value = colorInput.trim();
+    if (!value) return;
+
+    const exists = colors.some((x) => x.toLowerCase() === value.toLowerCase());
+    if (exists) {
+      setColorInput("");
+      return;
+    }
+
+    setColors((prev) => [...prev, value]);
+    setColorInput("");
+  };
+
+  const removeColor = (value: string) => {
+    setColors((prev) => prev.filter((x) => x !== value));
+  };
+
   const editProduct = (product: Product) => {
     setId(product.id);
     setName(product.name);
     setPrice(product.price.toString());
-    setCategory(product.category);
+    setCategory(normalizeCategory(product.category));
     setDescription(product.description);
 
     setImageUrls((product.imageUrl || []).slice(0, MAX_IMAGES));
@@ -189,6 +245,10 @@ export const useProductForm = (onSaved: () => void) => {
 
     setFlavors((product.flavors || []).map((f) => f.name));
     setFlavorInput("");
+    setOhms((product.ohms || []).map((o) => normalizeOhm(o.value)));
+    setOhmInput("");
+    setColors((product.colors || []).map((c) => c.name));
+    setColorInput("");
     setMessage("");
   };
 
@@ -212,6 +272,8 @@ export const useProductForm = (onSaved: () => void) => {
       imageUrl: imageUrls,
       coverIndex: safeCover,
       flavors,
+      ohms,
+      colors,
     };
 
     const { res, data } = await api.saveProduct(payload, id);
@@ -241,6 +303,10 @@ export const useProductForm = (onSaved: () => void) => {
     coverIndex,
     flavorInput,
     flavors,
+    ohmInput,
+    ohms,
+    colorInput,
+    colors,
     message,
     uploading,
     activeImages,
@@ -253,6 +319,8 @@ export const useProductForm = (onSaved: () => void) => {
     setDescription,
     setCoverIndex,
     setFlavorInput,
+    setOhmInput,
+    setColorInput,
 
     // actions
     resetForm,
@@ -262,6 +330,10 @@ export const useProductForm = (onSaved: () => void) => {
     uploadImages,
     addFlavor,
     removeFlavor,
+    addOhm,
+    removeOhm,
+    addColor,
+    removeColor,
     editProduct,
     save,
   };

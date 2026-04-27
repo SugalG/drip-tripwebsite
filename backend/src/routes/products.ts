@@ -1,14 +1,25 @@
-import { Router } from "express";
+import { Request, Response, Router } from "express";
 import prisma from "../lib/prisma";
 import requireAdmin from "../middleware/requireAdmin";
 
 const router = Router();
 
-/**
- * Express v5 typings can widen params to string | string[].
- * Prisma expects a string UUID.
- */
-const getIdParam = (req: any): string | null => {
+const productOptionInclude = {
+  flavors: {
+    select: { id: true, name: true },
+    orderBy: { name: "asc" as const },
+  },
+  ohms: {
+    select: { id: true, value: true },
+    orderBy: { value: "asc" as const },
+  },
+  colors: {
+    select: { id: true, name: true },
+    orderBy: { name: "asc" as const },
+  },
+};
+
+const getIdParam = (req: Request): string | null => {
   const raw = req.params?.id;
 
   if (typeof raw === "string") return raw;
@@ -16,19 +27,40 @@ const getIdParam = (req: any): string | null => {
   return null;
 };
 
-/**
- * GET all products (include flavors) - PUBLIC
- */
-router.get("/", async (_req, res) => {
+const normalizeStringArray = (value: unknown): string[] =>
+  Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === "string" && item.trim().length > 0)
+    : [];
+
+const resolveTargetBranchId = (req: Request) => {
+  if (!req.branch || !req.user) {
+    return null;
+  }
+
+  if (req.user.role === "SUPERADMIN") {
+    const requestedBranchId =
+      typeof req.body?.branchId === "string" && req.body.branchId.trim().length > 0
+        ? req.body.branchId.trim()
+        : req.branch.id;
+
+    return requestedBranchId;
+  }
+
+  return req.user.branchId;
+};
+
+router.get("/", async (req: Request, res: Response) => {
   try {
-    const products = await prisma.product.findMany({
+    const prismaClient = prisma as any;
+
+    if (!req.branch) {
+      return res.status(400).json({ error: "Branch context missing" });
+    }
+
+    const products = await prismaClient.product.findMany({
+      where: { branchId: req.branch.id },
       orderBy: { createdAt: "desc" },
-      include: {
-        flavors: {
-          select: { id: true, name: true },
-          orderBy: { name: "asc" },
-        },
-      },
+      include: productOptionInclude,
     });
 
     res.json(products);
@@ -38,22 +70,16 @@ router.get("/", async (_req, res) => {
   }
 });
 
-/**
- * GET product by id (include flavors) - PUBLIC
- */
-router.get("/:id", async (req, res) => {
+router.get("/:id", async (req: Request, res: Response) => {
   try {
+    const prismaClient = prisma as any;
     const id = getIdParam(req);
     if (!id) return res.status(400).json({ error: "Invalid product id" });
+    if (!req.branch) return res.status(400).json({ error: "Branch context missing" });
 
-    const product = await prisma.product.findUnique({
-      where: { id },
-      include: {
-        flavors: {
-          select: { id: true, name: true },
-          orderBy: { name: "asc" },
-        },
-      },
+    const product = await prismaClient.product.findFirst({
+      where: { id, branchId: req.branch.id },
+      include: productOptionInclude,
     });
 
     if (!product) return res.status(404).json({ error: "Product not found" });
@@ -65,41 +91,31 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-/**
- * CREATE product - PROTECTED ✅
- * body example:
- * {
- *   "name": "Vape X",
- *   "price": 1200,
- *   "category": "E-Liquids",
- *   "description": "...",
- *   "imageUrl": ["url1","url2","url3"],
- *   "coverIndex": 0,
- *   "flavors": ["Mint","Grape"]
- * }
- */
-router.post("/", requireAdmin, async (req, res) => {
+router.post("/", requireAdmin, async (req: Request, res: Response) => {
   try {
-    const { name, price, category, description, imageUrl, flavors, coverIndex } = req.body;
+    const prismaClient = prisma as any;
+    const branchId = resolveTargetBranchId(req);
 
-    // imageUrl should be string[]
-    const imageArray: string[] = Array.isArray(imageUrl)
-      ? imageUrl
-      : imageUrl
-      ? [imageUrl]
-      : [];
+    if (!branchId) {
+      return res.status(400).json({ error: "Branch context missing" });
+    }
 
-    // flavors should be string[]
-    const flavorArray: string[] = Array.isArray(flavors) ? flavors : [];
+    const { name, price, category, description, imageUrl, flavors, ohms, colors, coverIndex } =
+      req.body;
 
-    // coverIndex validation
+    const imageArray = normalizeStringArray(imageUrl);
+    const flavorArray = normalizeStringArray(flavors);
+    const ohmArray = normalizeStringArray(ohms);
+    const colorArray = normalizeStringArray(colors);
+
     let cover = Number(coverIndex);
     if (!Number.isFinite(cover)) cover = 0;
     if (cover < 0) cover = 0;
     if (cover > imageArray.length - 1) cover = 0;
 
-    const product = await prisma.product.create({
+    const product = await prismaClient.product.create({
       data: {
+        branchId,
         name,
         price: Number(price),
         category,
@@ -109,10 +125,14 @@ router.post("/", requireAdmin, async (req, res) => {
         flavors: {
           create: flavorArray.map((f) => ({ name: f })),
         },
+        ohms: {
+          create: ohmArray.map((o) => ({ value: o })),
+        },
+        colors: {
+          create: colorArray.map((c) => ({ name: c })),
+        },
       },
-      include: {
-        flavors: { select: { id: true, name: true }, orderBy: { name: "asc" } },
-      },
+      include: productOptionInclude,
     });
 
     res.status(201).json(product);
@@ -120,39 +140,46 @@ router.post("/", requireAdmin, async (req, res) => {
     console.error(error);
 
     if (error?.code === "P2002") {
-      return res.status(400).json({ error: "Duplicate flavor for this product" });
+      return res.status(400).json({ error: "Duplicate product option for this product" });
     }
 
     res.status(500).json({ error: "Failed to create product" });
   }
 });
 
-/**
- * UPDATE product - PROTECTED ✅
- * (replace all flavors)
- */
-router.put("/:id", requireAdmin, async (req, res) => {
+router.put("/:id", requireAdmin, async (req: Request, res: Response) => {
   try {
+    const prismaClient = prisma as any;
     const id = getIdParam(req);
     if (!id) return res.status(400).json({ error: "Invalid product id" });
 
-    const { name, price, category, description, imageUrl, flavors, coverIndex } = req.body;
+    const existingProduct = await prismaClient.product.findUnique({
+      where: { id },
+      select: { id: true, branchId: true },
+    });
 
-    const imageArray: string[] = Array.isArray(imageUrl)
-      ? imageUrl
-      : imageUrl
-      ? [imageUrl]
-      : [];
+    if (!existingProduct) {
+      return res.status(404).json({ error: "Product not found" });
+    }
 
-    const flavorArray: string[] = Array.isArray(flavors) ? flavors : [];
+    if (req.user?.role !== "SUPERADMIN" && existingProduct.branchId !== req.user?.branchId) {
+      return res.status(403).json({ error: "Forbidden for this branch" });
+    }
 
-    // coverIndex validation
+    const { name, price, category, description, imageUrl, flavors, ohms, colors, coverIndex } =
+      req.body;
+
+    const imageArray = normalizeStringArray(imageUrl);
+    const flavorArray = normalizeStringArray(flavors);
+    const ohmArray = normalizeStringArray(ohms);
+    const colorArray = normalizeStringArray(colors);
+
     let cover = Number(coverIndex);
     if (!Number.isFinite(cover)) cover = 0;
     if (cover < 0) cover = 0;
     if (cover > imageArray.length - 1) cover = 0;
 
-    const updatedProduct = await prisma.product.update({
+    const updatedProduct = await prismaClient.product.update({
       where: { id },
       data: {
         name,
@@ -162,13 +189,19 @@ router.put("/:id", requireAdmin, async (req, res) => {
         imageUrl: imageArray,
         coverIndex: cover,
         flavors: {
-          deleteMany: {}, // delete all existing flavors for this product
+          deleteMany: {},
           create: flavorArray.map((f) => ({ name: f })),
         },
+        ohms: {
+          deleteMany: {},
+          create: ohmArray.map((o) => ({ value: o })),
+        },
+        colors: {
+          deleteMany: {},
+          create: colorArray.map((c) => ({ name: c })),
+        },
       },
-      include: {
-        flavors: { select: { id: true, name: true }, orderBy: { name: "asc" } },
-      },
+      include: productOptionInclude,
     });
 
     res.json(updatedProduct);
@@ -176,22 +209,33 @@ router.put("/:id", requireAdmin, async (req, res) => {
     console.error(error);
 
     if (error?.code === "P2002") {
-      return res.status(400).json({ error: "Duplicate flavor for this product" });
+      return res.status(400).json({ error: "Duplicate product option for this product" });
     }
 
     res.status(500).json({ error: "Failed to update product" });
   }
 });
 
-/**
- * DELETE product - PROTECTED ✅
- */
-router.delete("/:id", requireAdmin, async (req, res) => {
+router.delete("/:id", requireAdmin, async (req: Request, res: Response) => {
   try {
+    const prismaClient = prisma as any;
     const id = getIdParam(req);
     if (!id) return res.status(400).json({ error: "Invalid product id" });
 
-    await prisma.product.delete({ where: { id } });
+    const existingProduct = await prismaClient.product.findUnique({
+      where: { id },
+      select: { id: true, branchId: true },
+    });
+
+    if (!existingProduct) {
+      return res.status(404).json({ error: "Product not found" });
+    }
+
+    if (req.user?.role !== "SUPERADMIN" && existingProduct.branchId !== req.user?.branchId) {
+      return res.status(403).json({ error: "Forbidden for this branch" });
+    }
+
+    await prismaClient.product.delete({ where: { id } });
 
     res.json({ message: "Product deleted successfully" });
   } catch (error) {

@@ -31,3 +31,4 @@ Thumbs.db
 # Optional: local tooling
 .vscode
 .idea
+.codex

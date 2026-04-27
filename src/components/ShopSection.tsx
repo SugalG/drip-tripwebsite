@@ -1,49 +1,27 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
+import { useQuery } from "@tanstack/react-query";
 import ProductCard from "./ProductCard";
+import { api } from "@/lib/api";
+import { Product } from "@/types/product";
 
-const API_URL = import.meta.env.VITE_API_URL;
-
-const categories = ["Disposables", "Mods", "E-Liquids", "Accessories", "All"];
-
-interface Flavor {
-  id: string;
-  name: string;
-}
-
-interface Product {
-  id: string;
-  name: string;
-  price: number;
-  category: string;
-  description: string;
-  imageUrl: string[];
-  coverIndex: number;
-  flavors: Flavor[];
-}
+const categories = ["Disposables", "Devices", "E-Liquids", "Accessories", "All"];
 
 const ShopSection = () => {
-  const [products, setProducts] = useState<Product[]>([]);
   const [activeCategory, setActiveCategory] = useState("All");
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetch(`${API_URL}/api/products`)
-      .then((res) => res.json())
-      .then((data) => {
-        setProducts(data);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error("Failed to fetch products", err);
-        setLoading(false);
-      });
-  }, []);
+  const { data: products = [], isLoading } = useQuery<Product[]>({
+    queryKey: ["products"],
+    queryFn: api.getProducts,
+  });
 
   const filteredProducts =
     activeCategory === "All"
       ? products
-      : products.filter((p) => p.category === activeCategory);
+      : products.filter((p) =>
+          activeCategory === "Devices"
+            ? p.category === "Devices" || p.category === "Mods"
+            : p.category === activeCategory
+        );
 
   return (
     <section id="shop" className="py-24 bg-primary-foreground">
@@ -59,7 +37,8 @@ const ShopSection = () => {
             <span className="gradient-text text-6xl">Our Products</span>
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Explore our wide selection of premium vape products. Quality and satisfaction guaranteed with every purchase.
+            Explore our wide selection of premium vape products. Quality and satisfaction
+            guaranteed with every purchase.
           </p>
         </motion.div>
 
@@ -87,7 +66,7 @@ const ShopSection = () => {
           ))}
         </motion.div>
 
-        {loading ? (
+        {isLoading ? (
           <p className="text-center text-lg">Loading products...</p>
         ) : (
           <motion.div layout className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -101,7 +80,6 @@ const ShopSection = () => {
                 description={product.description}
                 images={product.imageUrl}
                 coverIndex={product.coverIndex}
-                flavors={product.flavors?.map((f) => f.name) || []}
               />
             ))}
           </motion.div>

@@ -7,22 +7,74 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum UserRole {
+  SUPERADMIN
+  BRANCH_ADMIN
+}
+
+model Branch {
+  id             String    @id @default(uuid())
+  name           String
+  slug           String    @unique
+  subdomain      String?
+  domain         String
+  hostname       String    @unique
+  isActive       Boolean   @default(true)
+  address        String?
+  phone          String?
+  email          String?
+  whatsappNumber String?
+  mapEmbedUrl    String?
+  storeHours     String?
+  settings       Json?
+  users          User[]
+  products       Product[]
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([domain, subdomain])
+  @@index([isActive])
+}
+
+model User {
+  id           String    @id @default(uuid())
+  name         String?
+  username     String    @unique
+  email        String?   @unique
+  passwordHash String
+  role         UserRole
+  isActive     Boolean   @default(true)
+  branchId     String?
+  branch       Branch?   @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([role])
+  @@index([branchId])
+}
+
 model Product {
   id          String @id @default(uuid())
+  branchId    String
+  branch      Branch @relation(fields: [branchId], references: [id], onDelete: Restrict)
   name        String
   price       Int
   category    String
   description String
 
-  imageUrl   String[] // 1..3 images
-  coverIndex Int      @default(0) // which image is cover: 0,1,2
+  imageUrl   String[]
+  coverIndex Int      @default(0)
 
   flavors Flavor[]
+  ohms    Ohm[]
+  colors  Color[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([category])
+  @@index([branchId, category])
+  @@index([branchId, createdAt])
 }
 
 model Flavor {
@@ -32,6 +84,25 @@ model Flavor {
   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
 
-  // Prevent duplicate flavor names for same product
+  @@unique([name, productId])
+}
+
+model Ohm {
+  id        String   @id @default(uuid())
+  value     String
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([value, productId])
+}
+
+model Color {
+  id        String   @id @default(uuid())
+  name      String
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
   @@unique([name, productId])
 }

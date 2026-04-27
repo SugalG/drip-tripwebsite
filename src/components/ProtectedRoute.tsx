@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
-
-const API_URL = import.meta.env.VITE_API_URL;
+import { api } from "@/lib/api";
 
 type Props = {
   children: React.ReactNode;
@@ -13,10 +12,8 @@ export default function ProtectedRoute({ children }: Props) {
   const location = useLocation();
 
   useEffect(() => {
-    fetch(`${API_URL}/api/auth/me`, {
-      credentials: "include",
-    })
-      .then((res) => res.json())
+    api
+      .getCurrentUser()
       .then((data) => {
         setOk(Boolean(data?.authenticated));
         setLoading(false);
