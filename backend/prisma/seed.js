@@ -71,6 +71,7 @@ async function upsertBranch(branch) {
         "slug" = EXCLUDED."slug",
         "subdomain" = EXCLUDED."subdomain",
         "domain" = EXCLUDED."domain",
+        "hostname" = EXCLUDED."hostname",
         "isActive" = true,
         "address" = EXCLUDED."address",
         "phone" = EXCLUDED."phone",
