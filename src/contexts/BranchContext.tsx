@@ -22,6 +22,11 @@ export function BranchProvider({ children }: { children: React.ReactNode }) {
     queryKey: ["current-branch"],
     queryFn: api.getCurrentBranch,
     retry: false,
+    refetchInterval: 30000,
+    refetchIntervalInBackground: false,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: "always",
+    refetchOnReconnect: "always",
   });
 
   return (

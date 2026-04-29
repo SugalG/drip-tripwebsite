@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { useBranch } from "@/contexts/BranchContext";
 
@@ -39,28 +40,35 @@ const formatCategory = (category: string) => (category === "Mods" ? "Devices" : 
 export default function ProductDetails() {
   const { id } = useParams();
   const { branch } = useBranch();
-  const [product, setProduct] = useState<Product | null>(null);
-  const [loading, setLoading] = useState(true);
   const [activeImg, setActiveImg] = useState<string>("");
 
-  useEffect(() => {
-    if (!id) return;
+  const {
+    data: product = null,
+    isLoading: loading,
+  } = useQuery<Product | null>({
+    queryKey: ["product", id],
+    queryFn: () => (id ? api.getProduct(id) : Promise.resolve(null)),
+    enabled: Boolean(id),
+    retry: false,
+    refetchInterval: 15000,
+    refetchIntervalInBackground: false,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: "always",
+    refetchOnReconnect: "always",
+  });
 
-    setLoading(true);
-    api
-      .getProduct(id)
-      .then((data: Product) => {
-        setProduct(data);
-        const cover = data.imageUrl?.[data.coverIndex ?? 0] || data.imageUrl?.[0] || "";
-        setActiveImg(cover);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error(err);
-        setProduct(null);
-        setLoading(false);
-      });
-  }, [id]);
+  useEffect(() => {
+    if (!product) {
+      setActiveImg("");
+      return;
+    }
+
+    const cover = product.imageUrl?.[product.coverIndex ?? 0] || product.imageUrl?.[0] || "";
+    setActiveImg((current) => {
+      if (current && product.imageUrl?.includes(current)) return current;
+      return cover;
+    });
+  }, [product]);
 
   const images = useMemo(() => product?.imageUrl || [], [product]);
   const whatsappNumber = branch?.whatsappNumber || branch?.phone || "9779828037561";
