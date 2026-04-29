@@ -12,6 +12,11 @@ const ShopSection = () => {
   const { data: products = [], isLoading } = useQuery<Product[]>({
     queryKey: ["products"],
     queryFn: api.getProducts,
+    refetchInterval: 15000,
+    refetchIntervalInBackground: false,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: "always",
+    refetchOnReconnect: "always",
   });
 
   const filteredProducts =
