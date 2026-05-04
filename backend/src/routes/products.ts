@@ -49,6 +49,11 @@ const resolveTargetBranchId = (req: Request) => {
   return req.user.branchId;
 };
 
+const resolveAdminBranchId = (req: Request) => {
+  if (!req.branch || !req.user) return null;
+  return req.user.role === "SUPERADMIN" ? req.branch.id : req.user.branchId;
+};
+
 router.get("/", async (req: Request, res: Response) => {
   try {
     const prismaClient = prisma as any;
@@ -58,7 +63,10 @@ router.get("/", async (req: Request, res: Response) => {
     }
 
     const products = await prismaClient.product.findMany({
-      where: { branchId: req.branch.id },
+      where: {
+        branchId: req.branch.id,
+        isVisible: true,
+      },
       orderBy: { createdAt: "desc" },
       include: productOptionInclude,
     });
@@ -70,6 +78,32 @@ router.get("/", async (req: Request, res: Response) => {
   }
 });
 
+router.get("/admin", requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const prismaClient = prisma as any;
+    const branchId = resolveAdminBranchId(req);
+
+    if (!branchId) {
+      return res.status(400).json({ error: "Branch context missing" });
+    }
+
+    const products = await prismaClient.product.findMany({
+      where: { branchId },
+      orderBy: { createdAt: "desc" },
+      include: productOptionInclude,
+    });
+
+    res.json(products);
+  } catch (error) {
+    console.error("[products.admin.list] Failed to fetch branch inventory", {
+      branchId: req.user?.branchId,
+      userId: req.user?.userId,
+      error,
+    });
+    res.status(500).json({ error: "Failed to fetch branch inventory" });
+  }
+});
+
 router.get("/:id", async (req: Request, res: Response) => {
   try {
     const prismaClient = prisma as any;
@@ -78,7 +112,7 @@ router.get("/:id", async (req: Request, res: Response) => {
     if (!req.branch) return res.status(400).json({ error: "Branch context missing" });
 
     const product = await prismaClient.product.findFirst({
-      where: { id, branchId: req.branch.id },
+      where: { id, branchId: req.branch.id, isVisible: true },
       include: productOptionInclude,
     });
 
@@ -88,6 +122,56 @@ router.get("/:id", async (req: Request, res: Response) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Failed to fetch product" });
+  }
+});
+
+router.patch("/:id/visibility", requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const prismaClient = prisma as any;
+    const id = getIdParam(req);
+    if (!id) return res.status(400).json({ error: "Invalid product id" });
+    const branchId = resolveAdminBranchId(req);
+
+    if (!branchId) {
+      return res.status(400).json({ error: "Branch context missing" });
+    }
+
+    const { isVisible } = req.body;
+    if (typeof isVisible !== "boolean") {
+      return res.status(400).json({ error: "Visibility status is required" });
+    }
+
+    const existingProduct = await prismaClient.product.findFirst({
+      where: { id, branchId },
+      select: { id: true, branchId: true },
+    });
+
+    if (!existingProduct) {
+      return res.status(404).json({ error: "Product not found" });
+    }
+
+    const updatedProduct = await prismaClient.product.update({
+      where: { id },
+      data: { isVisible },
+      include: productOptionInclude,
+    });
+
+    console.info("[products.visibility.update] Product visibility changed", {
+      productId: id,
+      branchId,
+      userId: req.user?.userId,
+      isVisible,
+    });
+
+    return res.json(updatedProduct);
+  } catch (error) {
+    console.error("[products.visibility.update] Failed to update product visibility", {
+      productId: getIdParam(req),
+      branchId: req.user?.branchId,
+      userId: req.user?.userId,
+      error,
+    });
+    res.status(500).json({ error: "Failed to update product visibility" });
   }
 });
 

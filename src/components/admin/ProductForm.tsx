@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { X } from "lucide-react";
+import { ProductFormController } from "@/components/admin/hooks/useProductForm";
 
 const categories = [
   { name: "Disposables", value: "Disposables" },
@@ -9,7 +10,7 @@ const categories = [
 ];
 
 type Props = {
-  form: any; // keep simple, hook returns a big object
+  form: ProductFormController;
 };
 
 export default function ProductForm({ form }: Props) {
@@ -20,8 +21,12 @@ export default function ProductForm({ form }: Props) {
     category,
     description,
     uploading,
+    saving,
     message,
     MAX_IMAGES,
+    MAX_IMAGE_SIZE_MB,
+    ACCEPTED_IMAGE_TYPES_LABEL,
+    canSubmit,
     activeImages,
     activeCover,
     coverIndex,
@@ -55,10 +60,6 @@ export default function ProductForm({ form }: Props) {
     removeColor,
     save,
   } = form;
-
-  // ✅ IMPORTANT:
-  // Product can ONLY be saved when images are uploaded (imageUrls exist) and not uploading.
-  const canSubmit = !uploading && Array.isArray(form.imageUrls) && form.imageUrls.length > 0;
 
   return (
     <div className="w-full rounded-[1.25rem] bg-white/78 backdrop-blur-xl p-5 shadow-card border border-border/60 sm:rounded-[1.75rem] sm:p-8">
@@ -142,13 +143,14 @@ export default function ProductForm({ form }: Props) {
               Product Images
             </div>
             <p className="mt-1 text-xs text-muted-foreground">
-              Select up to {MAX_IMAGES} images, upload them, then choose the cover image.
+              Select up to {MAX_IMAGES} {ACCEPTED_IMAGE_TYPES_LABEL} images. Each image must be{" "}
+              {MAX_IMAGE_SIZE_MB}MB or smaller.
             </p>
           </div>
 
           <input
             type="file"
-            accept="image/*"
+            accept="image/jpeg,image/png,image/webp"
             multiple
             onChange={(e) => handleFilePick(e.target.files)}
             className="w-full px-4 py-3 rounded-2xl bg-background/90 border border-border"
@@ -220,7 +222,6 @@ export default function ProductForm({ form }: Props) {
             </div>
           )}
 
-          {/* ✅ Upload button only when local selected exists */}
           {selectedFiles.length > 0 && (
             <motion.button
               type="button"
@@ -379,7 +380,6 @@ export default function ProductForm({ form }: Props) {
           </div>
         </div>
 
-        {/* ✅ Submit disabled until uploaded images exist */}
         <motion.button
           type="submit"
           className={`w-full py-4 rounded-xl font-semibold shadow-button transition ${
@@ -393,6 +393,10 @@ export default function ProductForm({ form }: Props) {
         >
           {uploading
             ? "Uploading Images..."
+            : saving
+            ? id
+              ? "Saving Changes..."
+              : "Creating Product..."
             : !form.imageUrls?.length
             ? "Upload images to enable"
             : id

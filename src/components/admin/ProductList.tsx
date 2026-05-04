@@ -1,14 +1,22 @@
 import { motion } from "framer-motion";
-import { Edit, PackagePlus, Trash2 } from "lucide-react";
+import { Edit, Eye, EyeOff, PackagePlus, Trash2 } from "lucide-react";
 import { Product } from "@/types/product";
 
 type Props = {
   products: Product[];
   onEdit: (p: Product) => void;
   onDelete: (id: string) => void;
+  onToggleVisibility: (product: Product) => void;
+  visibilityUpdatingId?: string | null;
 };
 
-export default function ProductList({ products, onEdit, onDelete }: Props) {
+export default function ProductList({
+  products,
+  onEdit,
+  onDelete,
+  onToggleVisibility,
+  visibilityUpdatingId,
+}: Props) {
   if (!products.length) {
     return (
       <div className="rounded-[1.25rem] border border-dashed border-border bg-white/75 p-8 text-center shadow-sm sm:rounded-[1.75rem]">
@@ -29,6 +37,8 @@ export default function ProductList({ products, onEdit, onDelete }: Props) {
       {products.map((product) => {
         const cover =
           product.imageUrl?.[product.coverIndex] || product.imageUrl?.[0] || "";
+        const hidden = product.isVisible === false;
+        const visibilityUpdating = visibilityUpdatingId === product.id;
 
         return (
           <div
@@ -41,9 +51,9 @@ export default function ProductList({ products, onEdit, onDelete }: Props) {
               className="w-full h-44 object-cover rounded-[1.25rem] mb-3 bg-background"
             />
 
-            <div className="flex justify-between items-center mb-2">
+            <div className="mb-2 flex items-start justify-between gap-3">
               <h3 className="font-semibold pr-3">{product.name}</h3>
-              <div className="flex gap-2">
+              <div className="flex shrink-0 gap-2">
                 <motion.button
                   className="p-2 rounded-full bg-slate-900 text-background"
                   onClick={() => onEdit(product)}
@@ -62,7 +72,35 @@ export default function ProductList({ products, onEdit, onDelete }: Props) {
               </div>
             </div>
 
-            <p className="text-sm text-muted-foreground line-clamp-2">{product.description}</p>
+            <div className="mb-2 flex flex-wrap items-center gap-2">
+              <span
+                className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ${
+                  hidden
+                    ? "bg-slate-900 text-white"
+                    : "bg-emerald-500/10 text-emerald-700 border border-emerald-500/20"
+                }`}
+              >
+                {hidden ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                {hidden ? "Hidden" : "Visible"}
+              </span>
+              <button
+                type="button"
+                onClick={() => onToggleVisibility(product)}
+                disabled={visibilityUpdating}
+                className="inline-flex items-center gap-1 rounded-full border border-border bg-white px-2.5 py-1 text-xs font-semibold text-foreground transition hover:border-primary disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {hidden ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
+                {visibilityUpdating
+                  ? "Saving..."
+                  : hidden
+                    ? "Show on Store"
+                    : "Hide from Store"}
+              </button>
+            </div>
+
+            <p className="text-sm text-muted-foreground line-clamp-2 whitespace-pre-line">
+              {product.description}
+            </p>
 
             {product.flavors?.length > 0 && (
               <div className="flex flex-wrap gap-2 mt-2">

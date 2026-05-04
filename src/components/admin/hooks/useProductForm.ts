@@ -3,6 +3,10 @@ import { api } from "@/lib/api";
 import { Product } from "@/types/product";
 
 const MAX_IMAGES = 3;
+const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
+const MAX_IMAGE_SIZE_MB = MAX_IMAGE_SIZE_BYTES / (1024 * 1024);
+const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const ACCEPTED_IMAGE_TYPES_LABEL = "JPEG, PNG, or WebP";
 
 const normalizeCategory = (value: string) => (value === "Mods" ? "Devices" : value);
 
@@ -48,8 +52,9 @@ export const useProductForm = (onSaved: () => void) => {
 
   const [message, setMessage] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [saving, setSaving] = useState(false);
 
-  const canSubmit = !uploading && imageUrls.length > 0;
+  const canSubmit = !uploading && !saving && imageUrls.length > 0;
 
   const activeImages = useMemo(() => {
     return imageUrls.length > 0 ? imageUrls : previewUrls;
@@ -84,12 +89,25 @@ export const useProductForm = (onSaved: () => void) => {
     setColors([]);
     setColorInput("");
     setMessage("");
+    setSaving(false);
   };
 
   const handleFilePick = (files: FileList | null) => {
     if (!files) return;
 
     const picked = Array.from(files);
+    const invalidType = picked.find((file) => !ACCEPTED_IMAGE_TYPES.includes(file.type));
+    if (invalidType) {
+      setMessage(`Unsupported image type. Upload ${ACCEPTED_IMAGE_TYPES_LABEL} images only.`);
+      return;
+    }
+
+    const oversized = picked.find((file) => file.size > MAX_IMAGE_SIZE_BYTES);
+    if (oversized) {
+      setMessage(`"${oversized.name}" is too large. Each image must be ${MAX_IMAGE_SIZE_MB}MB or smaller.`);
+      return;
+    }
+
     const merged = [...selectedFiles, ...picked].slice(0, MAX_IMAGES);
 
     cleanupPreviews();
@@ -101,7 +119,11 @@ export const useProductForm = (onSaved: () => void) => {
     // preparing new upload set
     setImageUrls([]);
     setCoverIndex((prev) => clampCoverIndex(previews.length, prev));
-    setMessage("");
+    setMessage(
+      picked.length + selectedFiles.length > MAX_IMAGES
+        ? `Only ${MAX_IMAGES} images can be attached to one product. The first ${MAX_IMAGES} were kept.`
+        : ""
+    );
   };
 
   const removeSelectedImage = (idx: number) => {
@@ -139,7 +161,7 @@ export const useProductForm = (onSaved: () => void) => {
 
     try {
       setUploading(true);
-      setMessage("Uploading images... ⏳");
+      setMessage(`Uploading ${selectedFiles.length} image${selectedFiles.length === 1 ? "" : "s"}...`);
 
       const formData = new FormData();
       selectedFiles.forEach((file) => formData.append("images", file));
@@ -159,13 +181,13 @@ export const useProductForm = (onSaved: () => void) => {
         setPreviewUrls([]);
 
         setCoverIndex((prev) => clampCoverIndex(data.imageUrls.length, prev));
-        setMessage("Images uploaded ✅");
+        setMessage("Images uploaded successfully.");
       } else {
-        setMessage("Image upload failed ❌");
+        setMessage("Image upload failed. Please try again.");
       }
     } catch (e) {
       console.error(e);
-      setMessage("Image upload failed ❌");
+      setMessage("Image upload failed. Please try again.");
     } finally {
       setUploading(false);
     }
@@ -254,11 +276,11 @@ export const useProductForm = (onSaved: () => void) => {
 
   const save = async () => {
     if (uploading) {
-      setMessage("Please wait for image upload to finish ❗");
+      setMessage("Please wait for image upload to finish before saving.");
       return;
     }
     if (!imageUrls.length) {
-      setMessage("Please upload images before saving product ❗");
+      setMessage("Upload at least one product image before saving.");
       return;
     }
 
@@ -276,20 +298,34 @@ export const useProductForm = (onSaved: () => void) => {
       colors,
     };
 
-    const { res, data } = await api.saveProduct(payload, id);
+    try {
+      setSaving(true);
+      setMessage(id ? "Saving product changes..." : "Creating product...");
+      const { res, data } = await api.saveProduct(payload, id);
 
-    if (!res.ok) {
-      setMessage(data?.message || data?.error || "Error saving product ❌");
-      return;
+      if (!res.ok) {
+        setMessage(data?.message || data?.error || "Product could not be saved. Please try again.");
+        return;
+      }
+
+      const successMessage = id
+        ? "Product updated successfully."
+        : "Product created successfully.";
+      onSaved();
+      resetForm();
+      setMessage(successMessage);
+    } catch (error) {
+      console.error(error);
+      setMessage("Product could not be saved. Please try again.");
+    } finally {
+      setSaving(false);
     }
-
-    setMessage(id ? "Product updated successfully ✅" : "Product created successfully ✅");
-    onSaved();
-    resetForm();
   };
 
   return {
     MAX_IMAGES,
+    MAX_IMAGE_SIZE_MB,
+    ACCEPTED_IMAGE_TYPES_LABEL,
     canSubmit,
     // state
     id,
@@ -309,6 +345,7 @@ export const useProductForm = (onSaved: () => void) => {
     colors,
     message,
     uploading,
+    saving,
     activeImages,
     activeCover,
 
@@ -338,3 +375,5 @@ export const useProductForm = (onSaved: () => void) => {
     save,
   };
 };
+
+export type ProductFormController = ReturnType<typeof useProductForm>;

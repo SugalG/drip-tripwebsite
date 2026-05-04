@@ -10,6 +10,19 @@ const jsonRequest = async (input: string, init?: RequestInit) => {
   return { res, data };
 };
 
+type SaveProductPayload = {
+  name: string;
+  price: number;
+  category: string;
+  description: string;
+  imageUrl: string[];
+  coverIndex: number;
+  flavors: string[];
+  ohms: string[];
+  colors: string[];
+  branchId?: string;
+};
+
 export const api = {
   getCurrentBranch: async () => {
     const { res, data } = await jsonRequest("/api/branches/current");
@@ -38,6 +51,12 @@ export const api = {
   getProducts: async () => {
     const { res, data } = await jsonRequest("/api/products");
     if (!res.ok) throw new Error(data?.error || "Failed to fetch products");
+    return data;
+  },
+
+  getAdminProducts: async () => {
+    const { res, data } = await jsonRequest("/api/products/admin");
+    if (!res.ok) throw new Error(data?.error || "Failed to fetch branch inventory");
     return data;
   },
 
@@ -153,7 +172,7 @@ export const api = {
     });
   },
 
-  saveProduct: async (payload: any, id?: string | null) => {
+  saveProduct: async (payload: SaveProductPayload, id?: string | null) => {
     const method = id ? "PUT" : "POST";
     const url = id ? `/api/products/${id}` : "/api/products";
 
@@ -168,6 +187,16 @@ export const api = {
     return jsonRequest(`/api/products/${id}`, {
       method: "DELETE",
     });
+  },
+
+  setProductVisibility: async (id: string, isVisible: boolean) => {
+    const { res, data } = await jsonRequest(`/api/products/${id}/visibility`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ isVisible }),
+    });
+    if (!res.ok) throw new Error(data?.error || "Failed to update product visibility");
+    return data;
   },
 
   logout: async () => {

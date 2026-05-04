@@ -21,6 +21,7 @@ export interface Product {
   description: string;
   imageUrl: string[];
   coverIndex: number;
+  isVisible: boolean;
   flavors: FlavorObj[];
   ohms: OhmObj[];
   colors: ColorObj[];

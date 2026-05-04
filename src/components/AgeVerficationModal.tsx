@@ -11,14 +11,50 @@ interface AgeVerificationModalProps {
 
 const AGE_VERIFIED_KEY = "age_verified";
 const AGE_DENIED_KEY = "age_denied";
+const AGE_VERIFICATION_DURATION_MS = 30 * 24 * 60 * 60 * 1000;
+
+const readValidAgeApproval = () => {
+  const raw = localStorage.getItem(AGE_VERIFIED_KEY);
+  if (!raw) return false;
+
+  if (raw === "true") {
+    localStorage.setItem(
+      AGE_VERIFIED_KEY,
+      JSON.stringify({
+        verified: true,
+        expiresAt: Date.now() + AGE_VERIFICATION_DURATION_MS,
+      })
+    );
+    return true;
+  }
+
+  try {
+    const parsed = JSON.parse(raw) as { verified?: unknown; expiresAt?: unknown };
+    const valid =
+      parsed.verified === true &&
+      typeof parsed.expiresAt === "number" &&
+      parsed.expiresAt > Date.now();
+
+    if (!valid) {
+      localStorage.removeItem(AGE_VERIFIED_KEY);
+    }
+
+    return valid;
+  } catch {
+    localStorage.removeItem(AGE_VERIFIED_KEY);
+    return false;
+  }
+};
 
 const AgeVerificationModal = ({ onVerified }: AgeVerificationModalProps) => {
   const [disclaimerChecked, setDisclaimerChecked] = useState(false);
   const [denied, setDenied] = useState(false);
 
   useEffect(() => {
-    const isVerified = localStorage.getItem(AGE_VERIFIED_KEY) === "true";
-    const isDenied = localStorage.getItem(AGE_DENIED_KEY) === "true";
+    const isVerified = readValidAgeApproval();
+    const isDenied = sessionStorage.getItem(AGE_DENIED_KEY) === "true";
+
+    localStorage.removeItem(AGE_DENIED_KEY);
 
     if (isVerified) {
       onVerified();
@@ -33,14 +69,25 @@ const AgeVerificationModal = ({ onVerified }: AgeVerificationModalProps) => {
   const handleOver18 = () => {
     if (!disclaimerChecked) return;
 
-    localStorage.setItem(AGE_VERIFIED_KEY, "true");
-    localStorage.removeItem(AGE_DENIED_KEY);
+    localStorage.setItem(
+      AGE_VERIFIED_KEY,
+      JSON.stringify({
+        verified: true,
+        expiresAt: Date.now() + AGE_VERIFICATION_DURATION_MS,
+      })
+    );
+    sessionStorage.removeItem(AGE_DENIED_KEY);
     onVerified();
   };
 
   const handleUnder18 = () => {
-    localStorage.setItem(AGE_DENIED_KEY, "true");
+    sessionStorage.setItem(AGE_DENIED_KEY, "true");
     setDenied(true);
+  };
+
+  const handleWrongOption = () => {
+    sessionStorage.removeItem(AGE_DENIED_KEY);
+    setDenied(false);
   };
 
   return (
@@ -65,6 +112,14 @@ const AgeVerificationModal = ({ onVerified }: AgeVerificationModalProps) => {
               <p className="text-white/70 text-sm">
                 You must be 18 years or older to access this website. Please close this tab.
               </p>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleWrongOption}
+                className="border-white/20 bg-white/10 text-white hover:bg-white/20 hover:text-white"
+              >
+                I selected the wrong option
+              </Button>
             </div>
           ) : (
             <div className="space-y-6">

@@ -7,6 +7,7 @@ import requireAdmin from "../middleware/requireAdmin";
 
 const router = express.Router();
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 const UPLOAD_ROOT = path.resolve(__dirname, "../../uploads");
 
 const ensureDir = (dir: string) => {
@@ -40,16 +41,43 @@ const upload = multer({
     fileSize: MAX_FILE_SIZE,
   },
   fileFilter: (_req, file, cb) => {
-    if (!file.mimetype.startsWith("image/")) {
-      return cb(new Error("Only image uploads are allowed"));
+    if (!ALLOWED_IMAGE_TYPES.has(file.mimetype)) {
+      return cb(new Error("Only JPEG, PNG, and WebP images are supported"));
     }
 
     return cb(null, true);
   },
 });
 
-router.post("/", requireAdmin, upload.array("images", 3), async (req: Request, res: Response) => {
-  try {
+const sendUploadError = (res: Response, error: unknown) => {
+  console.error("[upload.images] Product image upload failed", error);
+
+  if (error instanceof multer.MulterError) {
+    if (error.code === "LIMIT_FILE_SIZE") {
+      return res.status(400).json({ error: "Each image must be 5MB or smaller" });
+    }
+
+    if (error.code === "LIMIT_UNEXPECTED_FILE") {
+      return res.status(400).json({ error: "Upload up to 3 product images at a time" });
+    }
+  }
+
+  if (
+    error instanceof Error &&
+    error.message === "Only JPEG, PNG, and WebP images are supported"
+  ) {
+    return res.status(400).json({ error: error.message });
+  }
+
+  return res.status(500).json({ error: "Upload failed" });
+};
+
+router.post("/", requireAdmin, async (req: Request, res: Response) => {
+  upload.array("images", 3)(req, res, (uploadError) => {
+    if (uploadError) {
+      return sendUploadError(res, uploadError);
+    }
+
     const files = Array.isArray(req.files) ? req.files : [];
 
     if (!files.length) {
@@ -60,19 +88,7 @@ router.post("/", requireAdmin, upload.array("images", 3), async (req: Request, r
     const imageUrls = files.map((file) => `/uploads/${branchKey}/${file.filename}`);
 
     return res.json({ imageUrls });
-  } catch (error) {
-    console.error("Local upload error:", error);
-
-    if (error instanceof multer.MulterError && error.code === "LIMIT_FILE_SIZE") {
-      return res.status(400).json({ error: "Each image must be 5MB or smaller" });
-    }
-
-    if (error instanceof Error && error.message === "Only image uploads are allowed") {
-      return res.status(400).json({ error: error.message });
-    }
-
-    return res.status(500).json({ error: "Upload failed" });
-  }
+  });
 });
 
 export default router;

@@ -2,9 +2,13 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { useBranch } from "@/contexts/BranchContext";
+import {
+  PRODUCT_VISIBILITY_EVENT_KEY,
+  parseProductVisibilityEvent,
+} from "@/lib/productVisibilityEvents";
 
 interface Flavor {
   id: string;
@@ -32,6 +36,7 @@ interface Product {
   ohms: Ohm[];
   flavors: Flavor[];
   colors: Color[];
+  isVisible: boolean;
 }
 
 const formatNPR = (price: number) => `NPR ${price.toLocaleString("en-NP")}`;
@@ -40,11 +45,14 @@ const formatCategory = (category: string) => (category === "Mods" ? "Devices" : 
 export default function ProductDetails() {
   const { id } = useParams();
   const { branch } = useBranch();
+  const queryClient = useQueryClient();
   const [activeImg, setActiveImg] = useState<string>("");
+  const [descriptionExpanded, setDescriptionExpanded] = useState(false);
 
   const {
     data: product = null,
     isLoading: loading,
+    isError,
   } = useQuery<Product | null>({
     queryKey: ["product", id],
     queryFn: () => (id ? api.getProduct(id) : Promise.resolve(null)),
@@ -57,21 +65,50 @@ export default function ProductDetails() {
     refetchOnReconnect: "always",
   });
 
+  const publicProduct = isError ? null : product;
+
   useEffect(() => {
-    if (!product) {
+    setDescriptionExpanded(false);
+  }, [id]);
+
+  useEffect(() => {
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key !== PRODUCT_VISIBILITY_EVENT_KEY) return;
+
+      const visibilityEvent = parseProductVisibilityEvent(event.newValue);
+      if (!visibilityEvent || visibilityEvent.productId !== id) return;
+
+      if (!visibilityEvent.isVisible) {
+        queryClient.setQueryData(["product", id], null);
+        return;
+      }
+
+      queryClient.invalidateQueries({ queryKey: ["product", id] });
+    };
+
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, [id, queryClient]);
+
+  useEffect(() => {
+    if (!publicProduct) {
       setActiveImg("");
       return;
     }
 
-    const cover = product.imageUrl?.[product.coverIndex ?? 0] || product.imageUrl?.[0] || "";
+    const cover =
+      publicProduct.imageUrl?.[publicProduct.coverIndex ?? 0] || publicProduct.imageUrl?.[0] || "";
     setActiveImg((current) => {
-      if (current && product.imageUrl?.includes(current)) return current;
+      if (current && publicProduct.imageUrl?.includes(current)) return current;
       return cover;
     });
-  }, [product]);
+  }, [publicProduct]);
 
-  const images = useMemo(() => product?.imageUrl || [], [product]);
+  const images = useMemo(() => publicProduct?.imageUrl || [], [publicProduct]);
   const whatsappNumber = branch?.whatsappNumber || branch?.phone || "9779828037561";
+  const shouldShowDescriptionToggle =
+    (publicProduct?.description.length || 0) > 180 ||
+    Boolean(publicProduct?.description.includes("\n"));
 
   if (loading) {
     return (
@@ -81,7 +118,7 @@ export default function ProductDetails() {
     );
   }
 
-  if (!product) {
+  if (!publicProduct) {
     return (
       <div className="min-h-screen gradient-hero px-4 py-10">
         <div className="container mx-auto max-w-6xl">
@@ -121,7 +158,7 @@ export default function ProductDetails() {
               {activeImg ? (
                 <img
                   src={activeImg}
-                  alt={product.name}
+                  alt={publicProduct.name}
                   className="w-full h-full object-contain p-6"
                 />
               ) : (
@@ -159,30 +196,45 @@ export default function ProductDetails() {
             className="p-6 rounded-3xl gradient-card shadow-card border border-border/50"
           >
             <span className="inline-block px-3 py-1 text-xs font-medium rounded-full bg-primary/10 text-primary mb-3">
-              {formatCategory(product.category)}
+              {formatCategory(publicProduct.category)}
             </span>
 
             <h1 className="text-3xl md:text-4xl font-display font-bold mb-3">
-              {product.name}
+              {publicProduct.name}
             </h1>
 
             <div className="text-2xl font-bold gradient-text mb-5">
-              {formatNPR(product.price)}
+              {formatNPR(publicProduct.price)}
             </div>
 
-            <p className="text-muted-foreground leading-relaxed mb-6">
-              {product.description}
-            </p>
+            <div className="mb-5">
+              <p
+                className={`whitespace-pre-line text-muted-foreground leading-relaxed ${
+                  descriptionExpanded ? "" : "line-clamp-3 sm:line-clamp-5"
+                }`}
+              >
+                {publicProduct.description}
+              </p>
+              {shouldShowDescriptionToggle && (
+                <button
+                  type="button"
+                  onClick={() => setDescriptionExpanded((value) => !value)}
+                  className="mt-2 text-sm font-semibold text-primary hover:text-primary/80"
+                >
+                  {descriptionExpanded ? "Show less" : "Read more"}
+                </button>
+              )}
+            </div>
 
-            {(product.ohms?.length > 0 ||
-              product.flavors?.length > 0 ||
-              product.colors?.length > 0) && (
-              <div className="space-y-5 mb-8">
-                {product.ohms?.length > 0 && (
+            {(publicProduct.ohms?.length > 0 ||
+              publicProduct.flavors?.length > 0 ||
+              publicProduct.colors?.length > 0) && (
+              <div className="space-y-4 mb-6">
+                {publicProduct.ohms?.length > 0 && (
                   <div>
                     <div className="font-semibold mb-2">Available Ohms</div>
                     <div className="flex flex-wrap gap-2">
-                      {product.ohms.map((ohm) => (
+                      {publicProduct.ohms.map((ohm) => (
                         <span
                           key={ohm.id}
                           className="text-xs px-3 py-1 rounded-full bg-primary/10 text-primary border border-primary/20"
@@ -194,11 +246,11 @@ export default function ProductDetails() {
                   </div>
                 )}
 
-                {product.flavors?.length > 0 && (
+                {publicProduct.flavors?.length > 0 && (
                   <div>
                     <div className="font-semibold mb-2">Available Flavours</div>
                     <div className="flex flex-wrap gap-2">
-                      {product.flavors.map((f) => (
+                      {publicProduct.flavors.map((f) => (
                         <span
                           key={f.id}
                           className="text-xs px-3 py-1 rounded-full bg-primary/10 text-primary border border-primary/20"
@@ -210,11 +262,11 @@ export default function ProductDetails() {
                   </div>
                 )}
 
-                {product.colors?.length > 0 && (
+                {publicProduct.colors?.length > 0 && (
                   <div>
                     <div className="font-semibold mb-2">Available Colours</div>
                     <div className="flex flex-wrap gap-2">
-                      {product.colors.map((color) => (
+                      {publicProduct.colors.map((color) => (
                         <span
                           key={color.id}
                           className="text-xs px-3 py-1 rounded-full bg-primary/10 text-primary border border-primary/20"
@@ -228,10 +280,10 @@ export default function ProductDetails() {
               </div>
             )}
 
-            <div className="mt-8">
+            <div className="mt-6">
               <a
                 href={`https://wa.me/${whatsappNumber.replace(/[^0-9]/g, "")}?text=${encodeURIComponent(
-                  `Hi, I'm interested in "${product.name}". Can you provide more details?`
+                  `Hi, I'm interested in "${publicProduct.name}". Can you provide more details?`
                 )}`}
                 target="_blank"
                 rel="noopener noreferrer"

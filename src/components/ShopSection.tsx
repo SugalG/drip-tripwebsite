@@ -1,14 +1,19 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import ProductCard from "./ProductCard";
 import { api } from "@/lib/api";
 import { Product } from "@/types/product";
+import {
+  PRODUCT_VISIBILITY_EVENT_KEY,
+  parseProductVisibilityEvent,
+} from "@/lib/productVisibilityEvents";
 
 const categories = ["Disposables", "Devices", "E-Liquids", "Accessories", "All"];
 
 const ShopSection = () => {
   const [activeCategory, setActiveCategory] = useState("All");
+  const queryClient = useQueryClient();
   const { data: products = [], isLoading } = useQuery<Product[]>({
     queryKey: ["products"],
     queryFn: api.getProducts,
@@ -18,6 +23,18 @@ const ShopSection = () => {
     refetchOnWindowFocus: "always",
     refetchOnReconnect: "always",
   });
+
+  useEffect(() => {
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key !== PRODUCT_VISIBILITY_EVENT_KEY) return;
+      if (!parseProductVisibilityEvent(event.newValue)) return;
+
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+    };
+
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, [queryClient]);
 
   const filteredProducts =
     activeCategory === "All"

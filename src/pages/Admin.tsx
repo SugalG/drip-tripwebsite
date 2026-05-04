@@ -7,6 +7,7 @@ import { useBranch } from "@/contexts/BranchContext";
 import { Branch } from "@/types/branch";
 import { Product } from "@/types/product";
 import { AuthMeResponse } from "@/types/user";
+import { broadcastProductVisibilityChange } from "@/lib/productVisibilityEvents";
 
 import AdminTopBar from "@/components/admin/AdminTopBar";
 import BranchSettingsForm from "@/components/admin/BranchSettingsForm";
@@ -33,14 +34,17 @@ export default function Admin() {
   );
 
   const { data: products, isLoading, isError } = useQuery<Product[]>({
-    queryKey: ["products"],
-    queryFn: api.getProducts,
+    queryKey: ["admin-products"],
+    queryFn: api.getAdminProducts,
     enabled: !isSuperadmin,
   });
 
   const form = useProductForm(() => {
+    qc.invalidateQueries({ queryKey: ["admin-products"] });
     qc.invalidateQueries({ queryKey: ["products"] });
   });
+  const [visibilityUpdatingId, setVisibilityUpdatingId] = useState<string | null>(null);
+  const [inventoryMessage, setInventoryMessage] = useState("");
 
   const handleLogout = async () => {
     try {
@@ -55,16 +59,48 @@ export default function Admin() {
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this product?")) return;
 
+    setInventoryMessage("Deleting product...");
     const { res, data } = await api.deleteProduct(id);
     if (!res.ok) {
-      // show message in form area
       form.resetForm();
-      // keep it simple, or you can create a toast
-      alert(data?.message || data?.error || "Failed to delete product ❌");
+      setInventoryMessage(data?.message || data?.error || "Failed to delete product.");
       return;
     }
 
+    qc.invalidateQueries({ queryKey: ["admin-products"] });
     qc.invalidateQueries({ queryKey: ["products"] });
+    setInventoryMessage("Product deleted successfully.");
+  };
+
+  const handleToggleVisibility = async (product: Product) => {
+    try {
+      setVisibilityUpdatingId(product.id);
+      setInventoryMessage(
+        product.isVisible ? "Hiding product from storefront..." : "Showing product on storefront..."
+      );
+      const nextIsVisible = !product.isVisible;
+      await api.setProductVisibility(product.id, nextIsVisible);
+      broadcastProductVisibilityChange({
+        productId: product.id,
+        isVisible: nextIsVisible,
+      });
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["admin-products"] }),
+        qc.invalidateQueries({ queryKey: ["products"] }),
+        qc.invalidateQueries({ queryKey: ["product"] }),
+      ]);
+      setInventoryMessage(
+        product.isVisible
+          ? "Product hidden from the public storefront."
+          : "Product is visible on the public storefront."
+      );
+    } catch (error) {
+      setInventoryMessage(
+        error instanceof Error ? error.message : "Failed to update product visibility."
+      );
+    } finally {
+      setVisibilityUpdatingId(null);
+    }
   };
 
   if (authLoading) return <div>Loading account...</div>;
@@ -175,10 +211,21 @@ export default function Admin() {
                   </div>
                 </div>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Everything listed here is visible only on this branch domain.
+                  This shows all products for this branch. Store visibility is marked on each item.
                 </p>
+                {inventoryMessage && (
+                  <p className="mt-3 rounded-xl border border-border/70 bg-white/70 px-3 py-2 text-sm text-muted-foreground">
+                    {inventoryMessage}
+                  </p>
+                )}
               </div>
-              <ProductList products={products} onEdit={form.editProduct} onDelete={handleDelete} />
+              <ProductList
+                products={products}
+                onEdit={form.editProduct}
+                onDelete={handleDelete}
+                onToggleVisibility={handleToggleVisibility}
+                visibilityUpdatingId={visibilityUpdatingId}
+              />
             </div>
           </div>
         )}
